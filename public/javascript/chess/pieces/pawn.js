@@ -65,3 +65,50 @@ Pawn.prototype.kill = function() {
     }
     this.position = null;
 };
+
+Pawn.prototype.getPossibleMoves = function() {
+    const moves = [];
+    let currentCol = this.position.charAt(0);
+    let currentRow = parseInt(this.position.charAt(1));
+    let moveDistance = this.color === 'white' ? 1 : -1;
+    let initialRow = this.color === 'white' ? 2 : 7;
+
+    // Regular move (move one step forward)
+    const nextRow = currentRow + moveDistance;
+    if (nextRow >= 1 && nextRow <= 8) { // Ensure it's within bounds
+        const forwardPosition = { col: currentCol, row: nextRow.toString() };
+        if (!this.board.getPieceAt(forwardPosition)) {
+            moves.push({ position: currentCol + nextRow, capture: false });
+        }
+
+        // Move two spaces forward if in initial position
+        if (currentRow === initialRow) {
+            const twoStepForwardPosition = { col: currentCol, row: (currentRow + 2 * moveDistance).toString() };
+            if (!this.board.getPieceAt(twoStepForwardPosition) && !this.board.getPieceAt(forwardPosition)) {
+                moves.push({ position: currentCol + (currentRow + 2 * moveDistance), capture: false });
+            }
+        }
+    }
+
+    // Diagonal captures
+    const leftCaptureCol = String.fromCharCode(currentCol.charCodeAt(0) - 1);
+    const rightCaptureCol = String.fromCharCode(currentCol.charCodeAt(0) + 1);
+
+    if (leftCaptureCol >= 'A' && leftCaptureCol <= 'H') {
+        const leftCapturePosition = { col: leftCaptureCol, row: nextRow.toString() };
+        const leftPiece = this.board.getPieceAt(leftCapturePosition);
+        if (leftPiece && leftPiece.color !== this.color) {
+            moves.push({ position: leftCaptureCol + nextRow, capture: true });
+        }
+    }
+
+    if (rightCaptureCol >= 'A' && rightCaptureCol <= 'H') {
+        const rightCapturePosition = { col: rightCaptureCol, row: nextRow.toString() };
+        const rightPiece = this.board.getPieceAt(rightCapturePosition);
+        if (rightPiece && rightPiece.color !== this.color) {
+            moves.push({ position: rightCaptureCol + nextRow, capture: true });
+        }
+    }
+
+    return moves;
+};
