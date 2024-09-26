@@ -1,62 +1,83 @@
-var Queen = function(config) {
+var Queen = function(config, board) {
     this.type = 'queen';
+    this.board = board; 
     this.constructor(config);
 };
 
 Queen.prototype = new Piece({});
 
-Queen.prototype.isValidPosition = function(targetPosition) {
+Queen.prototype.isValidMove = function(targetPosition) {
+    let currentCol = this.position.charCodeAt(0) - 65; // Convert A-H to 0-7
+    let currentRow = parseInt(this.position.charAt(1)) - 1; // Convert 1-8 to 0-7
+    let targetCol = targetPosition.col.charCodeAt(0) - 65;
+    let targetRow = parseInt(targetPosition.row) - 1;
+
+    // Check if the move is horizontal, vertical, or diagonal
+    let colDiff = Math.abs(targetCol - currentCol);
+    let rowDiff = Math.abs(targetRow - currentRow);
     
-    let currentCol = this.position.charAt(0);
-    let currentRow = parseInt(this.position.charAt(1));
-    let targetCol = targetPosition.col;
-    let targetRow = parseInt(targetPosition.row);
-
-    let colDiff = targetCol.charCodeAt(0) - currentCol.charCodeAt(0);
-    let rowDiff = targetRow - currentRow;
-
-    // Check if the move is either horizontal, vertical, or diagonal
-    if (colDiff === 0 || rowDiff === 0 || Math.abs(colDiff) === Math.abs(rowDiff)) {
-        // Check for pieces in the path
-        let colStep = Math.sign(colDiff);
-        let rowStep = Math.sign(rowDiff);
-        let col = currentCol.charCodeAt(0) + colStep;
-        let row = currentRow + rowStep;
-
-        while (col !== targetCol.charCodeAt(0) || row !== targetRow) {
-            let square = document.querySelector(`li[data-col="${String.fromCharCode(col)}"] li[data-row="${row}"]`);
-            if (square && square.querySelector('.piece')) {
-                console.warn("Path is blocked");
-                return false;
-            }
-            col += colStep;
-            row += rowStep;
-        }
-        return true;
+    if (!(colDiff === 0 || rowDiff === 0 || colDiff === rowDiff)) {
+        console.warn("Invalid move for queen: not horizontal, vertical, or diagonal");
+        return false;
     }
 
-    console.warn("Invalid move for queen");
-    return false;
+    // Determine direction of movement
+    let colStep = currentCol === targetCol ? 0 : (targetCol > currentCol ? 1 : -1);
+    let rowStep = currentRow === targetRow ? 0 : (targetRow > currentRow ? 1 : -1);
+
+    // Check for pieces blocking the path
+    let col = currentCol + colStep;
+    let row = currentRow + rowStep;
+    while (col !== targetCol || row !== targetRow) {
+        let pieceInPath = this.board.getPieceAt({
+            col: String.fromCharCode(col + 65),
+            row: (row + 1).toString()
+        });
+        if (pieceInPath) {
+            console.warn("Invalid move for queen: piece blocking path");
+            return false;
+        }
+        col += colStep;
+        row += rowStep;
+    }
+
+    // Check if there's a piece at the target position
+    let pieceAtTarget = this.board.getPieceAt(targetPosition);
+    if (pieceAtTarget) {
+        if (pieceAtTarget.color === this.color) {
+            console.warn("Invalid move for queen: cannot capture own piece");
+            return false;
+        } else {
+            return 'capture'; // Valid capture move
+        }
+    }
+
+    return true; // Valid move
 };
 
 Queen.prototype.moveTo = function(targetPosition) {
-    if (this.isValidPosition(targetPosition)) {
+    const result = this.isValidMove(targetPosition);
+    if (result === true) {
+        // Move the queen to the new position
         this.position = targetPosition.col + targetPosition.row;
         this.render();
         return true;
-    } else {
-        return false;
+    } else if (result === 'capture') {
+        // Capture the piece and move
+        let pieceToCapture = this.board.getPieceAt(targetPosition);
+        if (pieceToCapture) {
+            pieceToCapture.kill();
+        }
+        this.position = targetPosition.col + targetPosition.row;
+        this.render();
+        return true;
     }
+    return false; // Invalid move
 };
 
-Queen.prototype.render = function() {
-    // Remove the piece from its current position
-    let queenPieces = document.querySelectorAll(`.piece.${this.color}.${this.type}`);
-    queenPieces.forEach(piece => piece.remove());
-
-    // Add the piece to its new position
-    let newSquare = document.querySelector(`li[data-col="${this.position[0]}"] li[data-row="${this.position[1]}"]`);
-    if (newSquare) {
-        newSquare.innerHTML = `<div class="piece ${this.color} ${this.type}"></div>`;
+Queen.prototype.kill = function() {
+    if (this.$el && this.$el.parentNode) {
+        this.$el.parentNode.removeChild(this.$el);
     }
+    this.position = null;
 };
