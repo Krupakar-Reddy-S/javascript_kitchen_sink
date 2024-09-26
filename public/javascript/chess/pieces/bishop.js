@@ -7,8 +7,8 @@ var Bishop = function(config, board) {
 Bishop.prototype = new Piece({});
 
 Bishop.prototype.isValidMove = function(targetPosition) {
-    let currentCol = this.position.charCodeAt(0) - 65; // Convert A-H to 0-7
-    let currentRow = parseInt(this.position.charAt(1)) - 1; // Convert 1-8 to 0-7
+    let currentCol = this.position.charCodeAt(0) - 65;
+    let currentRow = parseInt(this.position.charAt(1)) - 1;
     let targetCol = targetPosition.col.charCodeAt(0) - 65;
     let targetRow = parseInt(targetPosition.row) - 1;
 
@@ -77,4 +77,50 @@ Bishop.prototype.kill = function() {
         this.$el.parentNode.removeChild(this.$el);
     }
     this.position = null;
+};
+
+
+Bishop.prototype.getPossibleMoves = function() {
+    const moves = [];
+    const currentCol = this.position.charCodeAt(0) - 65;
+    const currentRow = parseInt(this.position.charAt(1)) - 1;
+
+    // Define the four diagonal directions
+    const directions = [
+        { colStep: 1, rowStep: 1 },   // up-right
+        { colStep: 1, rowStep: -1 },  // down-right
+        { colStep: -1, rowStep: 1 },  // up-left
+        { colStep: -1, rowStep: -1 }  // down-left
+    ];
+
+    for (let direction of directions) {
+        let col = currentCol + direction.colStep;
+        let row = currentRow + direction.rowStep;
+
+        while (col >= 0 && col < 8 && row >= 0 && row < 8) {
+            const targetPosition = {
+                col: String.fromCharCode(col + 65),
+                row: (row + 1).toString()
+            };
+
+            const pieceAtTarget = this.board.getPieceAt(targetPosition);
+
+            if (!pieceAtTarget) {
+                // Empty square, valid move
+                moves.push({ position: targetPosition.col + targetPosition.row, capture: false });
+            } else if (pieceAtTarget.color !== this.color) {
+                // Enemy piece, can capture
+                moves.push({ position: targetPosition.col + targetPosition.row, capture: true });
+                break; // Stop checking this direction after encountering a piece
+            } else {
+                // Own piece, stop checking this direction
+                break;
+            }
+
+            col += direction.colStep;
+            row += direction.rowStep;
+        }
+    }
+
+    return moves;
 };
