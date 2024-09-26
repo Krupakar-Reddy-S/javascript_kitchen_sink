@@ -96,12 +96,62 @@ Board.prototype.selectPiece = function(clickedElement, selectedPiece) {
     this.clearSelection();
     clickedElement.classList.add('selected');
     this.selectedPiece = selectedPiece;
+    
+    // Highlight possible moves and captures
+    this.highlightPossibleMoves(selectedPiece);
 };
 
 Board.prototype.clearSelection = function() {
     const selectedElements = this.$el.querySelectorAll('.selected');
     selectedElements.forEach(el => el.classList.remove('selected'));
+
+    // Remove all highlight overlays after the move
+    const highlightedElements = this.$el.querySelectorAll('.highlight-overlay');
+    highlightedElements.forEach(el => el.remove());
+
     this.selectedPiece = null;
+};
+
+Board.prototype.highlightPossibleMoves = function(selectedPiece) {
+    const possibleMoves = selectedPiece.getPossibleMoves();
+
+    possibleMoves.forEach(move => {
+        const cell = this.getCellElement(move.position);
+        if (cell) {
+            // Create the overlay div and set it to the size of the cell
+            const highlightElement = document.createElement('div');
+            highlightElement.classList.add('highlight-overlay');
+
+            // console.log(move);
+
+            if (move.capture) {
+                highlightElement.classList.add('highlight-capture');
+            } else {
+                highlightElement.classList.add('highlight-move');
+            }
+
+            // Add the transparent overlay inside the cell
+            highlightElement.style.position = 'absolute';
+            highlightElement.style.top = '0';
+            highlightElement.style.left = '0';
+            highlightElement.style.width = '100%';
+            highlightElement.style.height = '100%';
+
+            cell.style.position = 'relative';
+            cell.appendChild(highlightElement);
+        }
+    });
+};
+
+Board.prototype.getCellElement = function(position) {
+    const col = position[0];
+    const row = position[1];
+    const colElement = this.$el.querySelector(`li[data-col="${col}"]`);
+    
+    if (colElement) {
+        return colElement.querySelector(`li[data-row="${row}"]`);
+    }
+    return null;
 };
 
 Board.prototype.switchTurn = function() {
