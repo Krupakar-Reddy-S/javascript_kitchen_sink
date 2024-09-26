@@ -112,8 +112,8 @@ Board.prototype.switchTurn = function() {
 Board.prototype.initiateGame = function() {
     // Create white pieces
     this.whitePieces = {
-        king: new King({ color: 'white', position: 'D1' }, this),
-        queen: new Queen({ color: 'white', position: 'E1' }, this),
+        king: new King({ color: 'white', position: 'E1' }, this),
+        queen: new Queen({ color: 'white', position: 'D1' }, this),
         bishops: [
             new Bishop({ color: 'white', position: 'C1' }, this),
             new Bishop({ color: 'white', position: 'F1' }, this)
@@ -136,8 +136,8 @@ Board.prototype.initiateGame = function() {
 
     // Create black pieces similarly
     this.blackPieces = {
-        king: new King({ color: 'black', position: 'D8' }, this),
-        queen: new Queen({ color: 'black', position: 'E8' }, this),
+        king: new King({ color: 'black', position: 'E8' }, this),
+        queen: new Queen({ color: 'black', position: 'D8' }, this),
         bishops: [
             new Bishop({ color: 'black', position: 'C8' }, this),
             new Bishop({ color: 'black', position: 'F8' }, this)
