@@ -3,6 +3,7 @@ var Board = function(config) {
     this.$el = document.getElementById(this.root_id);
     this.currentTurn = 'white';  // Initialize the game with white's turn
     this.selectedPiece = null;  // Currently selected piece
+    this.isOver = false;        // Check if the game is over
     this.generateBoardDom();
     this.addListeners();
 };
@@ -60,6 +61,7 @@ Board.prototype.boardClicked = function(event) {
 };
 
 Board.prototype.getClickedBlock = function(clickEvent) {
+    if (this.isOver) return null;
     const clickedCell = clickEvent.target.closest('li');
     if (clickedCell) {
         const row = clickedCell.getAttribute('data-row');
@@ -74,6 +76,7 @@ Board.prototype.getClickedBlock = function(clickEvent) {
 };
 
 Board.prototype.getPieceAt = function(cell) {
+    if (this.isOver) return false;
     if (!cell || !cell.row || !cell.col) return false;
     
     const position = cell.col + cell.row;

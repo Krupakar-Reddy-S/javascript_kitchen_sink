@@ -118,6 +118,15 @@ King.prototype.moveTo = function(targetPosition) {
     return false; // Invalid move
 };
 
+King.prototype.kill = function() {
+    if (this.$el && this.$el.parentNode) {
+        this.$el.parentNode.removeChild(this.$el);
+    }
+    this.position = null;
+    alert("Checkmate! " + (this.color === 'white' ? 'Black' : 'White') + " wins!");
+    this.board.isOver = true;
+};
+
 // Method to check if a move puts the king in check
 King.prototype.isInCheck = function(targetPosition) {
     if (!this.board.pieces || !Array.isArray(this.board.pieces)) {
