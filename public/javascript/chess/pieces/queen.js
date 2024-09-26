@@ -1,5 +1,3 @@
-QUEEN:
-
 var Queen = function(config, board) {
     this.type = 'queen';
     this.board = board; 
