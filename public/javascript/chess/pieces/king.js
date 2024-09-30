@@ -18,7 +18,7 @@ King.prototype.isValidMove = function(targetPosition) {
     let rowDiff = Math.abs(targetRow - currentRow);
     
     if (colDiff > 1 || rowDiff > 1) {
-        // Check for castling (only horizontal move by 2 squares)
+        // Check for castling
         if (!this.hasMoved && currentRow === targetRow && Math.abs(targetCol - currentCol) === 2) {
             return this.canCastle(targetPosition);
         }
@@ -40,75 +40,64 @@ King.prototype.isValidMove = function(targetPosition) {
     return true; // Valid move
 };
 
-// Add castling logic here
 King.prototype.canCastle = function(targetPosition) {
-    const currentCol = this.position.charCodeAt(0) - 65;
-    const targetCol = targetPosition.col.charCodeAt(0) - 65;
-    const row = this.position.charAt(1); // Get row as a string (should be '1' for white, '8' for black)
-    
-    // Castling direction: Kingside (right) or Queenside (left)
-    const direction = targetCol > currentCol ? 1 : -1;
+    let direction = targetPosition.col > this.position[0] ? 1 : -1;
+    let rookCol = direction === 1 ? 'H' : 'A';
+    let rookRow = this.color === 'white' ? '1' : '8';
+    let rook = this.board.getPieceAt({col: rookCol, row: rookRow});
 
-    // Identify the rook position based on direction
-    const rookCol = direction === 1 ? 'H' : 'A'; 
-    const rook = this.board.getPieceAt({col: rookCol, row: row});
-
-    // Ensure the rook is in place and has not moved
     if (!rook || rook.type !== 'rook' || rook.hasMoved) {
         console.warn("Invalid castling: Rook has moved or is not in place");
         return false;
     }
 
-    // Check if the path between the king and the rook is clear
-    let col = currentCol + direction;
-    const endCol = targetCol;
-    while (col !== endCol) {
-        if (this.board.getPieceAt({col: String.fromCharCode(col + 65), row: row})) {
+    // Check if the path is clear
+    let startCol = this.position.charCodeAt(0) - 65 + direction;
+    let endCol = direction === 1 ? 7 : 0; // Check all the way to the rook
+    for (let col = startCol; direction === 1 ? col < endCol : col > endCol; col += direction) {
+        if (this.board.getPieceAt({col: String.fromCharCode(col + 65), row: rookRow})) {
             console.warn("Invalid castling: Path is not clear");
             return false;
         }
-        col += direction;
     }
 
-    // Ensure the king is not in check, doesn't pass through, or end up in a square under attack
-    const middleCol = currentCol + direction; // Square between king and rook
-    const middlePosition = { col: String.fromCharCode(middleCol + 65), row: row };
-
-    if (this.isInCheck(this.position) || this.isInCheck(middlePosition) || this.isInCheck(targetPosition)) {
-        console.warn("Invalid castling: King is in check or passing through attacked square");
-        return false;
+    // Check if the king is in check or would pass through check
+    let kingCol = this.position.charCodeAt(0) - 65;
+    let checkCols = direction === 1 ? [kingCol, kingCol + 1, kingCol + 2] : [kingCol, kingCol - 1, kingCol - 2];
+    for (let col of checkCols) {
+        let checkPosition = {col: String.fromCharCode(col + 65), row: rookRow};
+        if (this.isInCheck(checkPosition)) {
+            console.warn("Invalid castling: King is in check or would pass through check");
+            return false;
+        }
     }
 
-    return 'castle'; // Valid castling
+    return 'castle';
 };
 
-// Move logic (including castling)
 King.prototype.moveTo = function(targetPosition) {
     const result = this.isValidMove(targetPosition);
     if (result === true || result === 'capture') {
-        // Normal move
+        // Move the king to the new position
         this.position = targetPosition.col + targetPosition.row;
         this.hasMoved = true;
         this.render();
         return true;
     } else if (result === 'castle') {
-        // Castling move
-        const currentCol = this.position.charCodeAt(0) - 65;
-        const targetCol = targetPosition.col.charCodeAt(0) - 65;
-        const direction = targetCol > currentCol ? 1 : -1;
-
-        const rookCol = direction === 1 ? 'H' : 'A'; 
-        const row = this.position.charAt(1); // The row for castling (either '1' or '8')
-        const rook = this.board.getPieceAt({col: rookCol, row: row});
+        // Perform castling
+        let direction = targetPosition.col > this.position[0] ? 1 : -1;
+        let rookCol = direction === 1 ? 'H' : 'A';
+        let rookRow = this.color === 'white' ? '1' : '8';
+        let rook = this.board.getPieceAt({col: rookCol, row: rookRow});
 
         // Move the king
         this.position = targetPosition.col + targetPosition.row;
         this.hasMoved = true;
         this.render();
 
-        // Move the rook to its new position (F or D)
-        const newRookCol = direction === 1 ? 'F' : 'D';
-        rook.position = newRookCol + row;
+        // Move the rook
+        let newRookCol = direction === 1 ? 'F' : 'D';
+        rook.position = newRookCol + rookRow;
         rook.hasMoved = true;
         rook.render();
 
@@ -152,7 +141,6 @@ King.prototype.isInCheck = function(targetPosition) {
     return isCheck;
 };
 
-// Add possible moves including castling
 King.prototype.getPossibleMoves = function() {
     const moves = [];
     const currentCol = this.position.charCodeAt(0) - 65;
@@ -181,16 +169,12 @@ King.prototype.getPossibleMoves = function() {
                 row: (newRow + 1).toString()
             };
 
-            const pieceAtTarget = this.board.getPieceAt(targetPosition);
-
-            if (!pieceAtTarget || pieceAtTarget.color !== this.color) {
-                // Empty square or enemy piece
-                if (!this.isInCheck(targetPosition)) {
-                    moves.push({ 
-                        position: targetPosition.col + targetPosition.row, 
-                        capture: pieceAtTarget ? true : false
-                    });
-                }
+            const result = this.isValidMove(targetPosition);
+            if (result === true || result === 'capture') {
+                moves.push({ 
+                    position: targetPosition.col + targetPosition.row, 
+                    capture: result === 'capture'
+                });
             }
         }
     }
